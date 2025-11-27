@@ -16,6 +16,10 @@ allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001", 
     "http://localhost:5173",
+    "https://employee-task-manager-delta.vercel.app",
+    "https://employee-task-manager-five.vercel.app",
+    "https://employee-task-manager-live.vercel.app",
+   
 ]
 
 # Add production frontend URL from environment variable
@@ -23,9 +27,10 @@ frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
     allowed_origins.append(frontend_url)
 
+# Allow all vercel preview deployments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
