@@ -19,7 +19,7 @@ allowed_origins = [
     "https://employee-task-manager-delta.vercel.app",
     "https://employee-task-manager-five.vercel.app",
     "https://employee-task-manager-live.vercel.app",
-   
+    "https://employee-task-manager-2ej1fbc6s-anuragyadavs-projects.vercel.app",
 ]
 
 # Add production frontend URL from environment variable
