@@ -4,16 +4,28 @@ from fastapi.staticfiles import StaticFiles
 from routers import employees, tasks, profile
 from dotenv import load_dotenv
 from pathlib import Path
+import os
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = FastAPI(title="Employee & Task Management System")
 
-# CORS middleware
+# CORS middleware - Allow both local and production origins
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "http://localhost:5173",
+]
+
+# Add production frontend URL from environment variable
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
