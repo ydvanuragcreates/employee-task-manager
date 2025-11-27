@@ -3,10 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
 from models import Task, Employee
-from schemas import Task as TaskSchema, TaskCreate, TaskUpdate, TaskWithEmployee, AITaskRequest
+from schemas import Task as TaskSchema, TaskCreate, TaskUpdate, TaskWithEmployee
 from auth import verify_clerk_token
-import os
-from openai import OpenAI
 
 router = APIRouter()
 
@@ -115,50 +113,4 @@ def delete_task(
     db.commit()
     return {"message": "Task deleted successfully"}
 
-@router.post("/ai-generate-description")
-def generate_task_description(
-    request: AITaskRequest,
-    auth_data: dict = Depends(verify_clerk_token)
-):
-    """AI Task Assistant - Generate detailed task description from title"""
-    api_key = os.getenv("OPENAI_API_KEY")
-    
-    if not api_key or api_key == "your_openai_api_key_here":
-        raise HTTPException(
-            status_code=500, 
-            detail="OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."
-        )
-    
-    try:
-        client = OpenAI(
-            api_key=api_key.strip(),
-            timeout=30.0
-        )
-        
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that generates detailed, professional task descriptions for project management. Keep descriptions concise but comprehensive, including key objectives and deliverables."
-                },
-                {
-                    "role": "user",
-                    "content": f"Generate a detailed task description for: {request.title}"
-                }
-            ],
-            max_tokens=200,
-            temperature=0.7
-        )
-        
-        description = response.choices[0].message.content.strip()
-        return {"description": description}
-    
-    except Exception as e:
-        error_msg = str(e)
-        if "authentication" in error_msg.lower() or "api key" in error_msg.lower():
-            raise HTTPException(status_code=401, detail="Invalid OpenAI API key. Please check your key.")
-        elif "connection" in error_msg.lower() or "timeout" in error_msg.lower():
-            raise HTTPException(status_code=503, detail="Cannot connect to OpenAI. Check your internet connection.")
-        else:
-            raise HTTPException(status_code=500, detail=f"AI generation failed: {error_msg}")
+

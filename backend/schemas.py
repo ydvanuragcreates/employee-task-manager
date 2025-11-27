@@ -52,9 +52,6 @@ class Task(TaskBase):
 class TaskWithEmployee(Task):
     employee: Optional[Employee] = None
 
-class AITaskRequest(BaseModel):
-    title: str
-
 class UserProfileBase(BaseModel):
     name: str
     role: str

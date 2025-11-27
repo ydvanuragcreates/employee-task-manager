@@ -1,9 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from database import Base
 import enum
-
-Base = declarative_base()
 
 class TaskStatus(enum.Enum):
     TODO = "todo"

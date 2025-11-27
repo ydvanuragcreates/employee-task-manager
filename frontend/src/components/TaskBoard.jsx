@@ -14,7 +14,6 @@ function TaskBoard() {
     employee_id: null
   })
   const [loading, setLoading] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     fetchTasks()
@@ -37,24 +36,6 @@ function TaskBoard() {
       setEmployees(response.data)
     } catch (error) {
       console.error('Error fetching employees:', error)
-    }
-  }
-
-  const handleAIGenerate = async () => {
-    if (!formData.title.trim()) {
-      alert('Please enter a task title first')
-      return
-    }
-    
-    setAiLoading(true)
-    try {
-      const response = await taskAPI.generateDescription(formData.title)
-      setFormData({ ...formData, description: response.data.description })
-    } catch (error) {
-      console.error('Error generating description:', error)
-      alert(error.response?.data?.detail || 'Failed to generate description')
-    } finally {
-      setAiLoading(false)
     }
   }
 
@@ -245,27 +226,16 @@ function TaskBoard() {
               </div>
               
               <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleAIGenerate}
-                    disabled={aiLoading || !formData.title.trim()}
-                    className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <span>✨</span>
-                    <span>{aiLoading ? 'Generating...' : 'AI Assistant'}</span>
-                  </button>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
                   required
                   rows="4"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter task description or use AI Assistant"
+                  placeholder="Enter task description"
                 />
               </div>
 

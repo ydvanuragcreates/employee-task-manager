@@ -53,7 +53,6 @@ export const taskAPI = {
   create: (data) => api.post('/tasks', data),
   update: (id, data) => api.put(`/tasks/${id}`, data),
   delete: (id) => api.delete(`/tasks/${id}`),
-  generateDescription: (title) => api.post('/tasks/ai-generate-description', { title }),
 }
 
 // Profile API
