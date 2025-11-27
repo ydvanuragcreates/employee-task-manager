@@ -130,7 +130,10 @@ def generate_task_description(
         )
     
     try:
-        client = OpenAI(api_key=api_key.strip())
+        client = OpenAI(
+            api_key=api_key.strip(),
+            timeout=30.0
+        )
         
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -145,8 +148,7 @@ def generate_task_description(
                 }
             ],
             max_tokens=200,
-            temperature=0.7,
-            timeout=30.0
+            temperature=0.7
         )
         
         description = response.choices[0].message.content.strip()
