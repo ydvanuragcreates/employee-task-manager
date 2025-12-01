@@ -21,9 +21,11 @@ function EmployeeTable() {
   const fetchEmployees = async () => {
     try {
       const response = await employeeAPI.getAll()
+      console.log('✅ Fetched employees:', response.data)
       setEmployees(response.data)
     } catch (error) {
-      console.error('Error fetching employees:', error)
+      console.error('❌ Error fetching employees:', error)
+      console.error('Response:', error.response?.data)
       alert('Failed to fetch employees')
     } finally {
       setIsInitialLoading(false)

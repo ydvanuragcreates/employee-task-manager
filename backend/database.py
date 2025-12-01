@@ -12,10 +12,21 @@ if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://")
 
 # Create engine (Handle arguments differently for SQLite vs Postgres)
 if "sqlite" in SQLALCHEMY_DATABASE_URL:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={
+            "check_same_thread": False,
+            "timeout": 30  # Increase timeout to prevent database locks
+        },
+        pool_pre_ping=True,  # Verify connections before using them
+        echo=False  # Set to True for SQL debugging
+    )
 else:
     # PostgreSQL does not need check_same_thread
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_pre_ping=True
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

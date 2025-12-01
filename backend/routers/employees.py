@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from database import get_db, init_db
+from database import get_db
 from models import Employee
 from schemas import Employee as EmployeeSchema, EmployeeCreate, EmployeeUpdate
 from auth import verify_clerk_token
 
 router = APIRouter()
-
-# Initialize database on first import
-init_db()
 
 @router.get("/", response_model=List[EmployeeSchema])
 def get_employees(
@@ -17,7 +14,9 @@ def get_employees(
     auth_data: dict = Depends(verify_clerk_token)
 ):
     user_id = auth_data["user_id"]
-    return db.query(Employee).filter(Employee.owner_id == user_id).all()
+    employees = db.query(Employee).filter(Employee.owner_id == user_id).all()
+    print(f"🔍 User {user_id} fetching employees: Found {len(employees)} employees")
+    return employees
 
 @router.get("/{employee_id}", response_model=EmployeeSchema)
 def get_employee(
@@ -41,6 +40,7 @@ def create_employee(
     auth_data: dict = Depends(verify_clerk_token)
 ):
     user_id = auth_data["user_id"]
+    print(f"➕ User {user_id} creating employee: {employee.name} ({employee.email})")
     
     # Check if email already exists for this user
     existing = db.query(Employee).filter(
@@ -57,6 +57,7 @@ def create_employee(
     db.add(db_employee)
     db.commit()
     db.refresh(db_employee)
+    print(f"✅ Employee created successfully with ID: {db_employee.id}")
     return db_employee
 
 @router.put("/{employee_id}", response_model=EmployeeSchema)

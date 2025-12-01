@@ -10,6 +10,11 @@ ENV/
 *.db
 *.sqlite3
 
+# Database backups and logs
+backend/db_backups/
+backend/db_monitor.log
+backend/uploads/
+
 # Environment
 .env
 .env.local
