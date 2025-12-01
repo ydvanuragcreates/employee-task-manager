@@ -3,18 +3,20 @@ import { SignedIn, SignedOut, SignIn, UserButton, useUser } from '@clerk/clerk-r
 import { AnimatePresence } from 'framer-motion'
 import EmployeeTable from './components/EmployeeTable'
 import TaskBoard from './components/TaskBoard'
+import DashboardStats from './components/DashboardStats'
 import Tabs from './components/Tabs'
 import ProfileModal from './components/ProfileModal'
 import Background3D from './components/Background3D'
 import { profileAPI } from './api/api'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('employees')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profile, setProfile] = useState(null)
   const { user } = useUser()
 
   const tabs = [
+    { id: 'dashboard', label: 'Dashboard' },
     { id: 'employees', label: 'Employees' },
     { id: 'tasks', label: 'Tasks' }
   ]
@@ -103,7 +105,9 @@ function App() {
             </div>
 
             <div className="p-6">
-              {activeTab === 'employees' ? <EmployeeTable /> : <TaskBoard />}
+              {activeTab === 'dashboard' && <DashboardStats />}
+              {activeTab === 'employees' && <EmployeeTable />}
+              {activeTab === 'tasks' && <TaskBoard />}
             </div>
           </div>
         </main>

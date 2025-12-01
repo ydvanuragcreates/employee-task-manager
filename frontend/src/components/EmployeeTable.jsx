@@ -1,47 +1,61 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { employeeAPI } from '../api/api'
-import { Search, Pencil, Trash2, Plus } from 'lucide-react'
+import { Search, Pencil, Trash2, Plus, Award } from 'lucide-react'
 import TableSkeleton from './TableSkeleton'
 import EmptyState from './EmptyState'
+import { 
+  useEmployees, 
+  useCreateEmployee, 
+  useUpdateEmployee, 
+  useDeleteEmployee 
+} from '../hooks/useEmployees'
+import { useTasks } from '../hooks/useTasks'
 
 function EmployeeTable() {
-  const [employees, setEmployees] = useState([])
+  // TanStack Query hooks - replaces manual useEffect and state management
+  const { data: employees = [], isLoading, isError, error } = useEmployees()
+  const { data: tasks = [] } = useTasks()
+  const createEmployee = useCreateEmployee()
+  const updateEmployee = useUpdateEmployee()
+  const deleteEmployee = useDeleteEmployee()
+
+  // Calculate completed tasks per employee
+  const employeeStats = useMemo(() => {
+    const stats = {}
+    employees.forEach(emp => {
+      const completedTasks = tasks.filter(
+        task => task.employee_id === emp.id && task.status === 'completed'
+      ).length
+      stats[emp.id] = completedTasks
+    })
+    return stats
+  }, [employees, tasks])
+
+  // Check if employee is a top performer (>5 completed tasks)
+  const isTopPerformer = (employeeId) => {
+    return employeeStats[employeeId] > 5
+  }
+
+  // Local UI state
   const [showModal, setShowModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [formData, setFormData] = useState({ name: '', email: '', role: '' })
-  const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isInitialLoading, setIsInitialLoading] = useState(true)
-
-  useEffect(() => {
-    fetchEmployees()
-  }, [])
-
-  const fetchEmployees = async () => {
-    try {
-      const response = await employeeAPI.getAll()
-      console.log('✅ Fetched employees:', response.data)
-      setEmployees(response.data)
-    } catch (error) {
-      console.error('❌ Error fetching employees:', error)
-      console.error('Response:', error.response?.data)
-      alert('Failed to fetch employees')
-    } finally {
-      setIsInitialLoading(false)
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    
     try {
       if (editingEmployee) {
-        await employeeAPI.update(editingEmployee.id, formData)
+        // Update existing employee
+        await updateEmployee.mutateAsync({
+          id: editingEmployee.id,
+          data: formData
+        })
       } else {
-        await employeeAPI.create(formData)
+        // Create new employee
+        await createEmployee.mutateAsync(formData)
       }
-      fetchEmployees()
       closeModal()
     } catch (error) {
       console.error('Error saving employee:', error)
@@ -55,16 +69,14 @@ function EmployeeTable() {
       } else {
         alert(`Error: ${errorMsg}`)
       }
-    } finally {
-      setLoading(false)
     }
   }
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this employee?')) return
+    
     try {
-      await employeeAPI.delete(id)
-      fetchEmployees()
+      await deleteEmployee.mutateAsync(id)
     } catch (error) {
       console.error('Error deleting employee:', error)
       alert('Failed to delete employee')
@@ -90,12 +102,40 @@ function EmployeeTable() {
     employee.role.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  // Check if any mutation is in progress
+  const isMutating = createEmployee.isPending || updateEmployee.isPending || deleteEmployee.isPending
+
+  // Handle error state
+  if (isError) {
+    return (
+      <div className="animate-fadeIn">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">
+            ❌ Error loading employees: {error?.message || 'Unknown error'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          >
+            Reload page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="animate-fadeIn">
       {/* Header Area with Title, Search, and Add Button */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1 max-w-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Employees</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            Employees
+            {/* Show loading indicator when refetching in background */}
+            {isLoading && (
+              <span className="ml-2 text-sm text-gray-500">(Loading...)</span>
+            )}
+          </h2>
           {/* Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -114,7 +154,8 @@ function EmployeeTable() {
         {/* Add Employee Button */}
         <button
           onClick={() => openModal()}
-          className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm transition-all"
+          disabled={isMutating}
+          className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="h-5 w-5 mr-2" />
           Add Employee
@@ -122,7 +163,7 @@ function EmployeeTable() {
       </div>
 
       {/* Loading State - Show Skeleton */}
-      {isInitialLoading ? (
+      {isLoading ? (
         <TableSkeleton rows={6} />
       ) : employees.length === 0 && !searchQuery ? (
         /* Empty State - No Employees */
@@ -169,7 +210,26 @@ function EmployeeTable() {
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                        {isTopPerformer(employee.id) && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-bold rounded-full shadow-sm"
+                            title={`${employeeStats[employee.id]} completed tasks`}
+                          >
+                            <Award className="h-3 w-3" />
+                            <span>Top Performer</span>
+                          </motion.div>
+                        )}
+                      </div>
+                      {isTopPerformer(employee.id) && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {employeeStats[employee.id]} tasks completed
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600">{employee.email}</div>
@@ -183,14 +243,16 @@ function EmployeeTable() {
                       <div className="flex items-center justify-end gap-3">
                         <button
                           onClick={() => openModal(employee)}
-                          className="inline-flex items-center text-gray-600 hover:text-blue-600 transition-colors"
+                          disabled={isMutating}
+                          className="inline-flex items-center text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Edit employee"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(employee.id)}
-                          className="inline-flex items-center text-gray-600 hover:text-red-600 transition-colors"
+                          disabled={isMutating}
+                          className="inline-flex items-center text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete employee"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -273,10 +335,10 @@ function EmployeeTable() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  disabled={isMutating}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Saving...' : 'Save'}
+                  {isMutating ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>

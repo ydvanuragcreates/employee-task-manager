@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Confetti from 'react-confetti'
 import { taskAPI, employeeAPI } from '../api/api'
 
 function TaskBoard() {
@@ -14,11 +15,36 @@ function TaskBoard() {
     employee_id: null
   })
   const [loading, setLoading] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  })
 
   useEffect(() => {
     fetchTasks()
     fetchEmployees()
+
+    // Handle window resize for confetti
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Trigger confetti celebration
+  const triggerConfetti = () => {
+    setShowConfetti(true)
+    // Stop confetti after 3 seconds
+    setTimeout(() => {
+      setShowConfetti(false)
+    }, 3000)
+  }
 
   const fetchTasks = async () => {
     try {
@@ -54,11 +80,21 @@ function TaskBoard() {
         employee_id: employeeId
       }
       
+      // Check if task is being moved to completed
+      const wasNotCompleted = editingTask && editingTask.status !== 'completed'
+      const isNowCompleted = formData.status === 'completed'
+      
       if (editingTask) {
         await taskAPI.update(editingTask.id, submitData)
       } else {
         await taskAPI.create(submitData)
       }
+      
+      // Trigger confetti if task was just completed
+      if (wasNotCompleted && isNowCompleted) {
+        triggerConfetti()
+      }
+      
       fetchTasks()
       closeModal()
     } catch (error) {
@@ -119,6 +155,18 @@ function TaskBoard() {
 
   return (
     <div className="animate-fadeIn">
+      {/* Confetti Effect */}
+      {showConfetti && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={500}
+          gravity={0.3}
+          colors={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']}
+        />
+      )}
+
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-800">Task Board</h2>
         <button
